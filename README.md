@@ -24,7 +24,7 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/Start-Up-Week-End-Bordeaux/QuoteForge-Ai.git
+    git clone https://github.com/softpython2884/QuoteForge-AI.git
     cd quote-forge-ai
     ```
 
