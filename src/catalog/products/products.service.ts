@@ -34,4 +34,21 @@ export class ProductsService {
             include: { unit: true }
         });
     }
+
+    async update(id: string, data: any) {
+        const { tags, ...rest } = data;
+        return this.prisma.product.update({
+            where: { id },
+            data: {
+                ...rest,
+                tags: tags ? (Array.isArray(tags) ? tags.join(',') : tags) : undefined,
+            },
+        });
+    }
+
+    async delete(id: string) {
+        return this.prisma.product.delete({
+            where: { id }
+        });
+    }
 }

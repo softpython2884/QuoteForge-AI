@@ -20,4 +20,14 @@ export class ProductsController {
     findOne(@Param('id') id: string) {
         return this.productsService.findOne(id);
     }
+
+    @Post(':id') // Using POST for update/patch flexibility if METHOD issues arise, but ideally PATCH
+    update(@Param('id') id: string, @Body() body: any) {
+        return this.productsService.update(id, body);
+    }
+
+    @Post(':id/delete') // Explicit delete path to avoid verb confusion in simple setups
+    delete(@Param('id') id: string) {
+        return this.productsService.delete(id);
+    }
 }

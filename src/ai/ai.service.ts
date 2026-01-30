@@ -14,7 +14,7 @@ export class AiService {
             return;
         }
         const genAI = new GoogleGenerativeAI(apiKey);
-        this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        this.model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     }
 
     async extractEntities(text: string): Promise<any> {
