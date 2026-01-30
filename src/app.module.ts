@@ -5,6 +5,9 @@ import { CatalogModule } from './catalog/catalog.module';
 import { BusinessLogicModule } from './business-logic/business-logic.module';
 import { AiModule } from './ai/ai.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { DocumentsModule } from './documents/documents.module';
+import { AuthModule } from './auth/auth.module';
+import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -18,6 +21,9 @@ import { AppService } from './app.service';
     BusinessLogicModule,
     AiModule,
     QuotesModule,
+    DocumentsModule,
+    AuthModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
