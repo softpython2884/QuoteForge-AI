@@ -24,13 +24,13 @@ export class AiService {
         }
 
         const promptText = `
-      You are an expert Quantity Surveyor and Construction Estimator.
-      Analyze the following customer request (and optional images) and extract the construction requirements into a structured JSON format.
+      You are an Expert PC Hardware Consultant and System Builder.
+      Analyze the following customer request (and optional images) and extract the hardware requirements into a structured JSON format.
       
       CORE PRINCIPLES:
-      - EXPERT INFERENCE: If the user describes a high-level task (e.g., "Build a partition wall"), you MUST break it down into standard components (e.g., "Plasterboard", "Metal Studs", "Insulation", "Labor") based on standard industry ratios.
-      - ACCURATE QUANTITIES: If detailed dimensions are provided, calculate the required areas/volumes. If implied, use standard heights (e.g., 2.5m for walls).
-      - NO PRICING: You are a translator. You do NOT set prices. Never include a "price" or "cost" field.
+      - EXPERT INFERENCE: If the user provides high-level requirements (e.g., "PC for 4K Gaming", "Video Editing workstation"), you MUST infer the necessary high-end components (CPU, GPU, RAM, Storage, PSU, Case, Cooling, and Assembly Labor) based on modern industry standards.
+      - COMPATIBILITY: Ensure the inferred parts are logically compatible (e.g., AM5 CPU with AM5 Motherboard, enough PSU wattage).
+      - NO PRICING: You are a translator/consultant. You do NOT set prices. Never include a "price" or "cost" field. The pricing engine handles that.
       - STRICT JSON: Output only valid JSON.
       
       OUTPUT SCHEMA:
@@ -38,16 +38,16 @@ export class AiService {
         "intent": "NEW_QUOTE" | "STATUS_CHECK" | "UNKNOWN",
         "items": [
           {
-             "description": string (the item name, e.g. "Plasterboard BA13"),
-             "quantity": number (calculated quantity),
-             "unit": string (standardized symbol e.g., m2, lm, pc, hr),
-             "material_hint": string (e.g., "Gypsum", "Steel"),
-             "dimensions_hint": string (e.g., "250x120", "48mm"),
-             "category_hint": string (e.g., "DRYWALL", "LABOR")
+             "description": string (the specific hardware part name or model, e.g. "RTX 4080 Super"),
+             "quantity": number (usually 1, unless specified),
+             "unit": string (use "pc" for parts, "h" for labor),
+             "material_hint": string (category hint, e.g., "Silicon", "Liquid", "Labor"),
+             "dimensions_hint": string (specs like "16GB", "850W", "ATX"),
+             "category_hint": string (e.g., "CPU", "GPU", "RAM", "PSU", "CASE", "SERVICE")
           }
         ],
         "confidence": number (0-1),
-        "warnings": string[] (any assumptions made, e.g. "Assumed wall height 2.5m")
+        "warnings": string[] (any assumptions or compatibility notes)
       }
 
       USER REQUEST:

@@ -121,7 +121,44 @@ export class QuotesService {
             include: { lines: true }
         });
 
-        // 5. Audit
+        // 5. Global Rules (Bundles/Promos on total)
+        const dbCategories: string[] = [];
+        for (const line of quoteLines) {
+            const p = await this.prisma.product.findUnique({ where: { id: line.productId } });
+            if (p?.category) dbCategories.push(p.category);
+        }
+
+        const globalRules = await this.prisma.rule.findMany({ where: { companyId: dto.companyId } });
+        const globalApplied = [];
+        let finalTotal = totalAmount;
+
+        for (const rule of globalRules) {
+            const conditions = JSON.parse(rule.conditions);
+            const actions = JSON.parse(rule.actions);
+
+            if (conditions.require_categories) {
+                const hasAll = (conditions.require_categories as string[]).every((cat: string) => dbCategories.includes(cat));
+                if (hasAll) {
+                    if (actions.type === 'DISCOUNT_PERCENT') {
+                        const discount = finalTotal * (Number(actions.value) / 100);
+                        finalTotal -= discount;
+                        globalApplied.push(`Bundle: ${rule.name} (-${discount.toFixed(2)}€)`);
+                    }
+                }
+            }
+        }
+
+        if (globalApplied.length > 0) {
+            await this.prisma.quote.update({
+                where: { id: quote.id },
+                data: {
+                    totalAmount: finalTotal,
+                    validationErrors: quote.validationErrors ? JSON.stringify([...JSON.parse(quote.validationErrors), ...globalApplied]) : JSON.stringify(globalApplied)
+                }
+            });
+        }
+
+        // 6. Audit
         await this.prisma.auditLog.create({
             data: {
                 quoteId: quote.id,

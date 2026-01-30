@@ -75,7 +75,15 @@ export class RulesService {
             case 'lte': return valueToCheck <= targetValue;
             case 'lt': return valueToCheck < targetValue;
             case 'eq': return valueToCheck == targetValue;
-            default: return false;
+            case 'contains_all':
+                if (!Array.isArray(valueToCheck) || !Array.isArray(targetValue)) return false;
+                return targetValue.every(v => valueToCheck.includes(v));
+            default:
+                // Handle special hardware conditions (require_categories)
+                if (condition.require_categories && context.allCategories) {
+                    return (condition.require_categories as string[]).every((cat: string) => (context.allCategories as string[]).includes(cat));
+                }
+                return false;
         }
     }
 }

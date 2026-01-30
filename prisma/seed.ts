@@ -3,167 +3,125 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🏗️  Seeding database with COMPLETE Construction Catalog...');
+    console.log('🏗️  Seeding database with COMPLETE PC Hardware Catalog...');
 
     // 1. Company
     const companyId = 'comp_1';
     await prisma.company.upsert({
         where: { id: companyId },
         update: {},
-        create: { id: companyId, name: 'QuoteForge Construction Demo', address: '123 Innovation Blvd' },
+        create: { id: companyId, name: 'ForgePC Gaming & Workstations', address: 'Tech Valley, Silicon Way' },
     });
 
     // 2. Units
     const unitsData = [
-        { id: 'unit_m2', name: 'Square Meter', symbol: 'm2' },
-        { id: 'unit_lm', name: 'Linear Meter', symbol: 'lm' },
-        { id: 'unit_pc', name: 'Piece', symbol: 'pc' },
-        { id: 'unit_box', name: 'Box', symbol: 'box' },
-        { id: 'unit_l', name: 'Liter', symbol: 'L' },
-        { id: 'unit_hr', name: 'Hour', symbol: 'h' },
-        { id: 'unit_roll', name: 'Roll', symbol: 'roll' },
+        { id: 'unit_pc', name: 'Piece', symbol: 'pc', companyId },
+        { id: 'unit_hr', name: 'Hour', symbol: 'h', companyId },
+        { id: 'unit_gb', name: 'Gigabyte', symbol: 'GB', companyId },
     ];
 
-    for (const u of unitsData) {
+    for (const unit of unitsData) {
         await prisma.unit.upsert({
-            where: { id: u.id },
-            update: {},
-            create: { ...u, companyId },
+            where: { id: unit.id },
+            update: unit,
+            create: unit,
         });
     }
 
-    // 3. Conversions (e.g. Box of Tiles -> m2)
-    // We assume some standard conversions for our demo products
-    const conversions = [
-        // 1 Box of 60x60cm tiles (4 tiles) = 1.44 m2
-        { from: 'unit_box', to: 'unit_m2', factor: 1.44 },
-
-        // 1 Roll of Glass Wool = 12 m2 (typical)
-        { from: 'unit_roll', to: 'unit_m2', factor: 12.0 },
-
-        // Metal Studs: Sold by Piece (unit_pc), often used as Linear Meters.
-        // Assume 1 stud = 3.0m
-        { from: 'unit_pc', to: 'unit_lm', factor: 3.0 },
-    ];
-
-    /*
-      NOTE: For the "Determinisic" engine, we usually convert REQUESTED unit to PRODUCT unit.
-      Ex: User asks 50m2. Product is sold in BOXES (1.44m2).
-      We need: 50 / 1.44 = 34.72 -> 35 Boxes.
-      So we need factor m2 -> box? Or box -> m2?
-      If factor = 1.44 (Box -> m2).
-      Qty = Request / Factor.
-    */
-
-    // We already have generic units. Let's add specific conversion for the demo company.
-    for (const c of conversions) {
-        await prisma.unitConversion.create({
-            data: {
-                companyId,
-                fromUnitId: c.from,
-                toUnitId: c.to,
-                factor: c.factor
-            }
-        });
-    }
-
-    // 4. Products (The Big List)
+    // 3. Products (~50 items)
     const products = [
-        // --- FLOORING (Tiles) ---
-        { name: 'Ceramic White Glossy', category: 'FLOORING', material: 'Ceramic', dimensions: '60x60cm', price: 25.00, unit: 'unit_m2' },
-        { name: 'Ceramic Beige Matte', category: 'FLOORING', material: 'Ceramic', dimensions: '45x45cm', price: 22.00, unit: 'unit_m2' },
-        { name: 'Porcelain Slate Effect', category: 'FLOORING', material: 'Porcelain', dimensions: '30x60cm', price: 45.00, unit: 'unit_m2' },
-        { name: 'Mosaic Blue Bathroom', category: 'FLOORING', material: 'Glass', dimensions: '30x30cm', price: 80.00, unit: 'unit_m2' },
-        { name: 'Marble Carrara Tiles', category: 'FLOORING', material: 'Marble', dimensions: '60x120cm', price: 120.00, unit: 'unit_m2' },
+        // --- CPUs ---
+        { name: 'Intel Core i9-14900K', category: 'CPU', material: 'Silicon', dimensions: 'LGA1700', basePrice: 589.00, unitId: 'unit_pc' },
+        { name: 'Intel Core i7-14700K', category: 'CPU', material: 'Silicon', dimensions: 'LGA1700', basePrice: 409.00, unitId: 'unit_pc' },
+        { name: 'Intel Core i5-14600K', category: 'CPU', material: 'Silicon', dimensions: 'LGA1700', basePrice: 319.00, unitId: 'unit_pc' },
+        { name: 'AMD Ryzen 9 7950X3D', category: 'CPU', material: 'Silicon', dimensions: 'AM5', basePrice: 699.00, unitId: 'unit_pc' },
+        { name: 'AMD Ryzen 7 7800X3D', category: 'CPU', material: 'Silicon', dimensions: 'AM5', basePrice: 449.00, unitId: 'unit_pc' },
+        { name: 'AMD Ryzen 5 7600X', category: 'CPU', material: 'Silicon', dimensions: 'AM5', basePrice: 229.00, unitId: 'unit_pc' },
 
-        // --- FLOORING (Wood) ---
-        { name: 'Oak Solid Wood Parquet', category: 'FLOORING', material: 'Oak', dimensions: '14mm', price: 65.00, unit: 'unit_m2' },
-        { name: 'Laminate Oak Finish', category: 'FLOORING', material: 'Laminate', dimensions: '8mm', price: 15.00, unit: 'unit_m2' },
-        { name: 'Engineer Wood Walnut', category: 'FLOORING', material: 'Walnut', dimensions: '12mm', price: 55.00, unit: 'unit_m2' },
-        { name: 'Bamboo Flooring', category: 'FLOORING', material: 'Bamboo', dimensions: '10mm', price: 40.00, unit: 'unit_m2' },
+        // --- GPUs ---
+        { name: 'NVIDIA GeForce RTX 4090', category: 'GPU', material: 'Electronic', dimensions: '3-Slot', basePrice: 1599.00, unitId: 'unit_pc' },
+        { name: 'NVIDIA GeForce RTX 4080 Super', category: 'GPU', material: 'Electronic', dimensions: '3-Slot', basePrice: 999.00, unitId: 'unit_pc' },
+        { name: 'NVIDIA GeForce RTX 4070 Ti Super', category: 'GPU', material: 'Electronic', dimensions: '2.5-Slot', basePrice: 799.00, unitId: 'unit_pc' },
+        { name: 'NVIDIA GeForce RTX 4070 Super', category: 'GPU', material: 'Electronic', dimensions: '2-Slot', basePrice: 599.00, unitId: 'unit_pc' },
+        { name: 'NVIDIA GeForce RTX 4060 Ti', category: 'GPU', material: 'Electronic', dimensions: '2-Slot', basePrice: 399.00, unitId: 'unit_pc' },
+        { name: 'AMD Radeon RX 7900 XTX', category: 'GPU', material: 'Electronic', dimensions: '3-Slot', basePrice: 929.00, unitId: 'unit_pc' },
+        { name: 'AMD Radeon RX 7800 XT', category: 'GPU', material: 'Electronic', dimensions: '2.5-Slot', basePrice: 499.00, unitId: 'unit_pc' },
 
-        // --- PAINTING ---
-        { name: 'Matte White Wall Paint', category: 'PAINTING', material: 'Acrylic', dimensions: '10L', price: 45.00, unit: 'unit_pc' },
-        { name: 'Satin White Trim Paint', category: 'PAINTING', material: 'Alkyd', dimensions: '2.5L', price: 35.00, unit: 'unit_pc' },
-        { name: 'Primer All Surface', category: 'PAINTING', material: 'Latex', dimensions: '5L', price: 25.00, unit: 'unit_pc' },
-        { name: 'Blue Navy Accent', category: 'PAINTING', material: 'Acrylic', dimensions: '2.5L', price: 30.00, unit: 'unit_pc' },
-        { name: 'Exterior Facade Paint', category: 'PAINTING', material: 'Silicone', dimensions: '15L', price: 120.00, unit: 'unit_pc' },
+        // --- Motherboards ---
+        { name: 'ASUS ROG Maximus Z790 Hero', category: 'MOTHERBOARD', material: 'PCB', dimensions: 'ATX', basePrice: 629.00, unitId: 'unit_pc' },
+        { name: 'MSI MAG Z790 Tomahawk WiFi', category: 'MOTHERBOARD', material: 'PCB', dimensions: 'ATX', basePrice: 259.00, unitId: 'unit_pc' },
+        { name: 'ASUS ROG Strix X670E-E Gaming', category: 'MOTHERBOARD', material: 'PCB', dimensions: 'ATX', basePrice: 499.00, unitId: 'unit_pc' },
+        { name: 'Gigabyte B650 AORUS ELITE AX', category: 'MOTHERBOARD', material: 'PCB', dimensions: 'ATX', basePrice: 199.00, unitId: 'unit_pc' },
+        { name: 'ASUS Prime B760M-A WiFi', category: 'MOTHERBOARD', material: 'PCB', dimensions: 'mATX', basePrice: 149.00, unitId: 'unit_pc' },
 
-        // --- PLUMBING ---
-        { name: 'Copper Pipe 15mm', category: 'PLUMBING', material: 'Copper', dimensions: '15mm', price: 8.00, unit: 'unit_lm' },
-        { name: 'Copper Pipe 22mm', category: 'PLUMBING', material: 'Copper', dimensions: '22mm', price: 12.00, unit: 'unit_lm' },
-        { name: 'PVC Pipe 40mm', category: 'PLUMBING', material: 'PVC', dimensions: '40mm', price: 3.50, unit: 'unit_lm' },
-        { name: 'Kitchen Faucet Chrome', category: 'PLUMBING', material: 'Metal', dimensions: 'Standard', price: 85.00, unit: 'unit_pc' },
-        { name: 'Bathroom Mixer Tap', category: 'PLUMBING', material: 'Chrome', dimensions: 'Standard', price: 65.00, unit: 'unit_pc' },
-        { name: 'Shower Head Rain', category: 'PLUMBING', material: 'Steel', dimensions: '30cm', price: 150.00, unit: 'unit_pc' },
+        // --- RAM ---
+        { name: 'Corsair Vengeance RGB 32GB (2x16GB) DDR5-6000', category: 'RAM', material: 'Electronic', dimensions: 'DIMM', basePrice: 124.00, unitId: 'unit_pc' },
+        { name: 'G.Skill Trident Z5 Neo 64GB (2x32GB) DDR5-6000', category: 'RAM', material: 'Electronic', dimensions: 'DIMM', basePrice: 209.00, unitId: 'unit_pc' },
+        { name: 'Kingston FURY Beast 16GB (2x8GB) DDR4-3200', category: 'RAM', material: 'Electronic', dimensions: 'DIMM', basePrice: 45.00, unitId: 'unit_pc' },
 
-        // --- ELECTRICITY ---
-        { name: 'Electrical Cable 3G1.5', category: 'ELECTRICITY', material: 'Copper/PVC', dimensions: '1.5mm2', price: 0.80, unit: 'unit_lm' },
-        { name: 'Electrical Cable 3G2.5', category: 'ELECTRICITY', material: 'Copper/PVC', dimensions: '2.5mm2', price: 1.20, unit: 'unit_lm' },
-        { name: 'Socket Outlet White', category: 'ELECTRICITY', material: 'Plastic', dimensions: 'Standard', price: 5.00, unit: 'unit_pc' },
-        { name: 'Light Switch Single', category: 'ELECTRICITY', material: 'Plastic', dimensions: 'Standard', price: 4.50, unit: 'unit_pc' },
-        { name: 'Circuit Breaker 16A', category: 'ELECTRICITY', material: 'Plastic', dimensions: 'DIN', price: 12.00, unit: 'unit_pc' },
+        // --- Storage ---
+        { name: 'Samsung 990 Pro 2TB NVMe SSD', category: 'STORAGE', material: 'SSD', dimensions: 'M.2', basePrice: 179.00, unitId: 'unit_pc' },
+        { name: 'Crucial P3 Plus 1TB NVMe SSD', category: 'STORAGE', material: 'SSD', dimensions: 'M.2', basePrice: 69.00, unitId: 'unit_pc' },
+        { name: 'Seagate BarraCuda 4TB HDD', category: 'STORAGE', material: 'Platter', dimensions: '3.5"', basePrice: 89.00, unitId: 'unit_pc' },
 
-        // --- CARPENTRY / DOORS ---
-        { name: 'Door Interior White', category: 'CARPENTRY', material: 'Wood Composite', dimensions: '204x73cm', price: 89.00, unit: 'unit_pc' },
-        { name: 'Door Interior Oak', category: 'CARPENTRY', material: 'Oak Veneer', dimensions: '204x83cm', price: 149.00, unit: 'unit_pc' },
-        { name: 'Door Handle Modern', category: 'CARPENTRY', material: 'Steel', dimensions: 'Standard', price: 25.00, unit: 'unit_pc' },
-        { name: 'Skirting Board White', category: 'CARPENTRY', material: 'MDF', dimensions: '10cm', price: 5.00, unit: 'unit_lm' },
+        // --- PSU ---
+        { name: 'Corsair RM1000x 1000W 80+ Gold', category: 'PSU', material: 'Electronic', dimensions: 'ATX', basePrice: 189.00, unitId: 'unit_pc' },
+        { name: 'EVGA SuperNOVA 850 GT 850W', category: 'PSU', material: 'Electronic', dimensions: 'ATX', basePrice: 129.00, unitId: 'unit_pc' },
+        { name: 'be quiet! Pure Power 12 M 750W', category: 'PSU', material: 'Electronic', dimensions: 'ATX', basePrice: 109.00, unitId: 'unit_pc' },
 
-        // --- ISOLATION / DRYWALL ---
-        { name: 'Gypsum Board Standard', category: 'DRYWALL', material: 'Gypsum', dimensions: '250x120cm', price: 12.00, unit: 'unit_pc' }, // roughly 4€/m2
-        { name: 'Glass Wool Roll', category: 'INSULATION', material: 'Glass Wool', dimensions: '100mm', price: 45.00, unit: 'unit_roll' },
-        { name: 'Metal Stud Profile', category: 'DRYWALL', material: 'Steel', dimensions: '48mm', price: 3.00, unit: 'unit_lm' },
+        // --- Cases ---
+        { name: 'Lian Li PC-O11 Dynamic EVO', category: 'CASE', material: 'Steel/Glass', dimensions: 'Mid Tower', basePrice: 169.00, unitId: 'unit_pc' },
+        { name: 'NZXT H7 Flow', category: 'CASE', material: 'Steel', dimensions: 'Mid Tower', basePrice: 129.00, unitId: 'unit_pc' },
+        { name: 'Fractal Design North', category: 'CASE', material: 'Steel/Wood', dimensions: 'Mid Tower', basePrice: 139.00, unitId: 'unit_pc' },
+        { name: 'Corsair 4000D Airflow', category: 'CASE', material: 'Steel', dimensions: 'Mid Tower', basePrice: 104.00, unitId: 'unit_pc' },
 
-        // --- SERVICES ---
-        { name: 'Tiling Labor', category: 'LABOR', material: 'Service', dimensions: 'N/A', price: 45.00, unit: 'unit_hr' },
-        { name: 'Painting Labor', category: 'LABOR', material: 'Service', dimensions: 'N/A', price: 40.00, unit: 'unit_hr' },
-        { name: 'Plumbing Labor', category: 'LABOR', material: 'Service', dimensions: 'N/A', price: 60.00, unit: 'unit_hr' },
-        { name: 'Electrical Labor', category: 'LABOR', material: 'Service', dimensions: 'N/A', price: 60.00, unit: 'unit_hr' },
-        { name: 'General Installation', category: 'LABOR', material: 'Service', dimensions: 'N/A', price: 50.00, unit: 'unit_hr' },
+        // --- Cooling ---
+        { name: 'NZXT Kraken Elite 360 RGB', category: 'COOLING', material: 'Liquid', dimensions: '360mm', basePrice: 279.00, unitId: 'unit_pc' },
+        { name: 'Noctua NH-D15 chromax.black', category: 'COOLING', material: 'Metal', dimensions: 'Air Cooler', basePrice: 119.00, unitId: 'unit_pc' },
+        { name: 'Arctic Liquid Freezer III 240', category: 'COOLING', material: 'Liquid', dimensions: '240mm', basePrice: 99.00, unitId: 'unit_pc' },
+        { name: 'Corsair iCUE AF120 RGB Elite (3-Pack)', category: 'COOLING', material: 'Plastic', dimensions: '120mm', basePrice: 84.00, unitId: 'unit_pc' },
+
+        // --- Services ---
+        { name: 'Standard PC Assembly & BIOS Update', category: 'SERVICE', material: 'Labor', dimensions: 'Basic', basePrice: 75.00, unitId: 'unit_pc' },
+        { name: 'Advanced Watercooling Installation', category: 'SERVICE', material: 'Labor', dimensions: 'Custom', basePrice: 150.00, unitId: 'unit_pc' },
+        { name: 'Windows 11 Home Installation & Drivers', category: 'SERVICE', material: 'Labor', dimensions: 'Software', basePrice: 40.00, unitId: 'unit_pc' },
+        { name: 'Consultation & Parts Selection', category: 'SERVICE', material: 'Expertise', dimensions: '1h', basePrice: 50.00, unitId: 'unit_hr' },
+
+        // --- Peripherals ---
+        { name: 'ASUS ROG Swift PG279QM 27" 1440p 240Hz', category: 'MONITOR', material: 'Plastic/Glass', dimensions: '27"', basePrice: 749.00, unitId: 'unit_pc' },
+        { name: 'Logitech G Pro X Superlight 2', category: 'PERIPHERAL', material: 'Plastic', dimensions: 'Wireless', basePrice: 159.00, unitId: 'unit_pc' },
+        { name: 'Wooting 60HE+ Mechanical Keyboard', category: 'PERIPHERAL', material: 'Plastic', dimensions: '60%', basePrice: 175.00, unitId: 'unit_pc' },
     ];
 
-    console.log(`Adding ${products.length} products...`);
-
-    let i = 0;
     for (const p of products) {
-        i++;
-        const id = `prod_${p.category.toLowerCase().substring(0, 3)}_${i}`;
-        await prisma.product.upsert({
-            where: { id },
-            update: {},
-            create: {
-                id,
+        await prisma.product.create({
+            data: {
+                ...p,
                 companyId,
-                name: p.name,
-                category: p.category,
-                material: p.material,
-                dimensions: p.dimensions,
-                basePrice: p.price,
-                unitId: p.unit,
-                currency: 'EUR',
-                tags: `${p.category.toLowerCase()},${p.material.toLowerCase()},${p.name.toLowerCase().split(' ').join(',')}`
+                tags: `${p.category} ${p.material} ${p.dimensions}`.toLowerCase(),
             }
         });
     }
 
-    // 5. Rules
-    // Bulk Discount
-    await prisma.rule.upsert({
-        where: { id: 'rule_bulk_10' },
-        update: {},
-        create: {
-            id: 'rule_bulk_10',
+    // 4. Rules
+    await prisma.rule.create({
+        data: {
             companyId,
-            name: 'Bulk Discount 10%',
-            description: '10% off for quantities > 50',
-            priority: 1,
-            conditions: JSON.stringify({ field: 'quantity', operator: 'gte', value: 50 }),
-            actions: JSON.stringify({ type: 'DISCOUNT_PERCENT', value: 0.10 }),
+            name: 'Gaming Combo Discount',
+            description: '10% off total if CPU and GPU are bought together',
+            conditions: JSON.stringify({
+                require_categories: ['CPU', 'GPU'],
+                min_items: 2
+            }),
+            actions: JSON.stringify({
+                type: 'DISCOUNT_PERCENT',
+                value: 10
+            }),
+            priority: 1
         }
     });
 
-    console.log('✅ Seeding COMPLETE! Database is ready for production simulation.');
+    console.log('✅ PC Hardware Seed Complete!');
 }
 
 main()
