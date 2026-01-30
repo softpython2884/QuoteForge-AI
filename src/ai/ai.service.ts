@@ -18,37 +18,42 @@ export class AiService {
         this.model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     }
 
-    async extractEntities(text: string, images: string[] = []): Promise<AiExtractionResult> {
+    async extractEntities(text: string, images: string[] = [], catalog: any[] = []): Promise<AiExtractionResult> {
         if (!this.model) {
             throw new Error("AI Model not initialized");
         }
 
+        const catalogContent = catalog.length > 0
+            ? `CATALOG:
+${catalog.map(p => `- [id: ${p.id}] ${p.name} | Category: ${p.category} | Price: ${p.basePrice} | Unit: ${p.unit?.symbol || 'pc'}`).join('\n')}`
+            : 'No catalog provided.';
+
         const promptText = `
-      You are an Expert PC Hardware Consultant and System Builder.
-      Analyze the following customer request (and optional images) and extract the hardware requirements into a structured JSON format.
+      You are an Expert PC Hardware Consultant. Use the provided CATALOG to fulfill the user's request.
       
+      ${catalogContent}
+
       CORE PRINCIPLES:
-      - EXPERT INFERENCE: If the user provides high-level requirements (e.g., "PC for 4K Gaming", "Video Editing workstation"), you MUST infer the necessary high-end components (CPU, GPU, RAM, Storage, PSU, Case, Cooling, and Assembly Labor) based on modern industry standards.
-      - STRICT NAMING: Do NOT use "e.g.", "or", or list alternatives in the description. Provide exactly ONE specific model or component name that best fits the hardware category needed.
-      - ACCURATE QUANTITIES: If inferred, use logical quantities (1 CPU, 1 Motherboard, etc.).
-      - NO PRICING: You are a translator/consultant. You do NOT set prices. Never include a "price" or "cost" field. The pricing engine handles that.
+      - EXACT MATCHING: Use the ACTUAL product names from the catalog. 
+      - SMART QUANTITIES: If the user asks for a specification we don't have exactly (e.g., "4TB SSD"), use MULTIPLE units of what we DO have (e.g., 2x "Samsung 990 Pro 2TB").
+      - EXPERT INFERENCE: If a "Full PC Build" is requested, infer EVERY necessary component from the catalog (CPU, GPU, RAM, SSD, PSU, Case, Motherboard, Fans, Assembly Service).
+      - UNIT SYNC: Use the EXACT unit symbol provided in the catalog for each item.
+      - NO PRICING IN OUTPUT: You use prices to select the best "High-End" vs "Budget" parts, but DO NOT include price fields in your JSON output.
       - STRICT JSON: Output only valid JSON.
       
       OUTPUT SCHEMA:
       {
-        "intent": "NEW_QUOTE" | "STATUS_CHECK" | "UNKNOWN",
+        "intent": "NEW_QUOTE",
         "items": [
           {
-             "description": string (The specific hardware name, e.g. "RTX 4090". NO EXAMPLES/ALTERNATIVES.),
-             "quantity": number (usually 1, unless specified),
-             "unit": string (use "pc" for parts, "h" for labor),
-             "material_hint": string (category hint, e.g., "Silicon", "Liquid", "Labor"),
-             "dimensions_hint": string (specs like "16GB", "850W", "ATX"),
-             "category_hint": string (e.g., "CPU", "GPU", "RAM", "PSU", "CASE", "SERVICE")
+             "description": string (Exact product name from catalog),
+             "quantity": number,
+             "unit": string (Exact symbol from catalog),
+             "category_hint": string (Category from catalog)
           }
         ],
-        "confidence": number (0-1),
-        "warnings": string[] (any assumptions or compatibility notes)
+        "confidence": number,
+        "warnings": string[]
       }
 
       USER REQUEST:

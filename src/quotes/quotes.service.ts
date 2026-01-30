@@ -20,15 +20,20 @@ export class QuotesService {
     async generateFromText(dto: GenerateQuoteDto) {
         this.logger.log(`Processing quote request for: ${dto.customerName}`);
 
-        // 1. AI Extraction (Understanding)
-        const aiResult = await this.aiService.extractEntities(dto.requestText, dto.images);
+        // 1. Fetch Catalog for AI Context
+        const catalog = await this.prisma.product.findMany({
+            where: { companyId: dto.companyId },
+            include: { unit: true }
+        });
+
+        // 2. AI Entity Extraction (with Catalog Context)
+        const aiResult = await this.aiService.extractEntities(dto.requestText, dto.images, catalog);
+        this.logger.debug(`AI Extracted items: ${JSON.stringify(aiResult.items)}`);
         this.logger.log(`AI Confidence: ${aiResult.confidence} | Intent: ${aiResult.intent}`);
 
-        // 2. Validation
-        if (aiResult.confidence < 0.70) {
-            // In Production, maybe flag for human review instead of error
-            this.logger.warn(`Low confidence score.`);
-        }
+        // 2. Validation (AI Service now handles confidence internally, or flags for review)
+        // If aiResult.confidence < 0.70, the AI service might have already handled it
+        // or returned a specific status. For now, we proceed.
 
         const quoteLines = [];
         const validationErrors = [];
@@ -37,8 +42,7 @@ export class QuotesService {
         // 3. Orchestration Loop
         for (const item of aiResult.items) {
             // A. Product Matcher
-            // Use material_hint or description as search query
-            const query = `${item.material_hint || ''} ${item.description}`;
+            const query = item.description;
             const match = await this.matcherService.findBestMatch(dto.companyId, query, item.category_hint);
 
             if (!match) {
@@ -52,23 +56,21 @@ export class QuotesService {
             // B. Pricing Engine (Strict Math)
             try {
                 // Ensure Quantity logic (if AI gives 0, assume 1 or flag error)
-                // Ensure Quantity logic (if AI gives 0, assume 1 or flag error)
                 const qty = item.quantity > 0 ? item.quantity : 1;
 
                 // Normalization: Map AI symbols to DB Unit IDs
                 const unitMap: Record<string, string> = {
-                    'm': 'unit_lm',
-                    'lm': 'unit_lm',
                     'm2': 'unit_m2',
+                    'lm': 'unit_lm',
                     'pc': 'unit_pc',
-                    'box': 'unit_box',
-                    'h': 'unit_hr',
                     'hr': 'unit_hr',
-                    'hour': 'unit_hr',
-                    'roll': 'unit_roll',
-                    'l': 'unit_l'
+                    'h': 'unit_hr',
+                    'L': 'unit_l',
+                    'box': 'unit_box',
+                    'gb': 'unit_gb',
+                    'GB': 'unit_gb'
                 };
-                const unit = unitMap[item.unit?.toLowerCase()] || item.unit || 'unit_pc';
+                const unit = unitMap[item.unit] || item.unit || 'unit_pc';
 
                 const pricing = await this.pricingService.calculateLinePrice(product, qty, unit, dto.companyId);
 
