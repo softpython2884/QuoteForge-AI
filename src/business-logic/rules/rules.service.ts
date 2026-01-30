@@ -64,7 +64,15 @@ export class RulesService {
     private checkCondition(condition: any, context: any): boolean {
         // Simple evaluator: field, operator, value
         // Ex: { field: "quantity", operator: "gte", value: 50 }
-        if (!condition || !condition.field) return true; // No condition = always apply?
+        if (!condition || Object.keys(condition).length === 0) return true;
+
+        // If it's a specific requirement rule (like require_categories), 
+        // delegate to the special hardware logic
+        if (condition.require_categories && context.allCategories) {
+            return (condition.require_categories as string[]).every((cat: string) => (context.allCategories as string[]).includes(cat));
+        }
+
+        if (!condition.field) return false; // If no field and not a special rule, it's not applicable here
 
         const valueToCheck = context[condition.field];
         const targetValue = condition.value;
@@ -78,12 +86,7 @@ export class RulesService {
             case 'contains_all':
                 if (!Array.isArray(valueToCheck) || !Array.isArray(targetValue)) return false;
                 return targetValue.every(v => valueToCheck.includes(v));
-            default:
-                // Handle special hardware conditions (require_categories)
-                if (condition.require_categories && context.allCategories) {
-                    return (condition.require_categories as string[]).every((cat: string) => (context.allCategories as string[]).includes(cat));
-                }
-                return false;
+            default: return false;
         }
     }
 }

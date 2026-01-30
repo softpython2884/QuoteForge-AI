@@ -29,7 +29,8 @@ export class AiService {
       
       CORE PRINCIPLES:
       - EXPERT INFERENCE: If the user provides high-level requirements (e.g., "PC for 4K Gaming", "Video Editing workstation"), you MUST infer the necessary high-end components (CPU, GPU, RAM, Storage, PSU, Case, Cooling, and Assembly Labor) based on modern industry standards.
-      - COMPATIBILITY: Ensure the inferred parts are logically compatible (e.g., AM5 CPU with AM5 Motherboard, enough PSU wattage).
+      - STRICT NAMING: Do NOT use "e.g.", "or", or list alternatives in the description. Provide exactly ONE specific model or component name that best fits the hardware category needed.
+      - ACCURATE QUANTITIES: If inferred, use logical quantities (1 CPU, 1 Motherboard, etc.).
       - NO PRICING: You are a translator/consultant. You do NOT set prices. Never include a "price" or "cost" field. The pricing engine handles that.
       - STRICT JSON: Output only valid JSON.
       
@@ -38,7 +39,7 @@ export class AiService {
         "intent": "NEW_QUOTE" | "STATUS_CHECK" | "UNKNOWN",
         "items": [
           {
-             "description": string (the specific hardware part name or model, e.g. "RTX 4080 Super"),
+             "description": string (The specific hardware name, e.g. "RTX 4090". NO EXAMPLES/ALTERNATIVES.),
              "quantity": number (usually 1, unless specified),
              "unit": string (use "pc" for parts, "h" for labor),
              "material_hint": string (category hint, e.g., "Silicon", "Liquid", "Labor"),

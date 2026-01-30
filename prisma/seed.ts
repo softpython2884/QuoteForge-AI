@@ -104,10 +104,12 @@ async function main() {
     }
 
     // 4. Rules
-    await prisma.rule.create({
-        data: {
+    const ruleName = 'Gaming Combo Discount';
+    await prisma.rule.upsert({
+        where: { id: 'rule_gaming_combo' }, // Use a fixed ID for idempotency
+        update: {
             companyId,
-            name: 'Gaming Combo Discount',
+            name: ruleName,
             description: '10% off total if CPU and GPU are bought together',
             conditions: JSON.stringify({
                 require_categories: ['CPU', 'GPU'],
@@ -118,6 +120,29 @@ async function main() {
                 value: 10
             }),
             priority: 1
+        },
+        create: {
+            id: 'rule_gaming_combo',
+            companyId,
+            name: ruleName,
+            description: '10% off total if CPU and GPU are bought together',
+            conditions: JSON.stringify({
+                require_categories: ['CPU', 'GPU'],
+                min_items: 2
+            }),
+            actions: JSON.stringify({
+                type: 'DISCOUNT_PERCENT',
+                value: 10
+            }),
+            priority: 1
+        }
+    });
+
+    // Also delete any old accidental rules with the same name that don't have the fixed ID
+    await prisma.rule.deleteMany({
+        where: {
+            name: ruleName,
+            NOT: { id: 'rule_gaming_combo' }
         }
     });
 

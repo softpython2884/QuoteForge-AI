@@ -65,9 +65,9 @@ export class PricingService {
         for (const r of appliedRules) {
             const action = r.action;
             if (action.type === 'DISCOUNT_PERCENT') {
-                const discountAmount = total * Number(action.value);
+                const discountAmount = total * (Number(action.value) / 100);
                 total -= discountAmount;
-                trace.push(`Applied ${r.name}: -${discountAmount.toFixed(2)} (${action.value * 100}%)`);
+                trace.push(`Applied ${r.name}: -${discountAmount.toFixed(2)} (${action.value}%)`);
             }
             // Add other rule types here (SURCHARGE, FIXED_DISCOUNT, etc.)
         }

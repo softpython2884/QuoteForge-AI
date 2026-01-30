@@ -76,7 +76,7 @@ export class QuotesService {
 
                 quoteLines.push({
                     productId: product.id,
-                    description: item.description, // User text
+                    description: product.name, // Use actual DB name for professional quote
                     quantity: pricing.quantity, // Converted Quantity (e.g. Packs)
                     unitPrice: pricing.unitPrice,
                     totalPrice: pricing.total,
