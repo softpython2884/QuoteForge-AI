@@ -16,5 +16,13 @@ export class RulesController {
         return this.rulesService.findAll(companyId);
     }
 
-    // Add Delete/Update if needed
+    @Delete(':id')
+    remove(@Param('id') id: string) {
+        return this.rulesService.remove(id);
+    }
+
+    @Post(':id') // Using POST for simple updates 
+    update(@Param('id') id: string, @Body() data: any) {
+        return this.rulesService.update(id, data);
+    }
 }

@@ -23,6 +23,22 @@ export class RulesService {
         });
     }
 
+    async update(id: string, data: any) {
+        // Handle JSON stringification if part of update
+        const updateData = { ...data };
+        if (data.conditions && typeof data.conditions !== 'string') updateData.conditions = JSON.stringify(data.conditions);
+        if (data.actions && typeof data.actions !== 'string') updateData.actions = JSON.stringify(data.actions);
+
+        return this.prisma.rule.update({
+            where: { id },
+            data: updateData
+        });
+    }
+
+    async remove(id: string) {
+        return this.prisma.rule.delete({ where: { id } });
+    }
+
     /**
      * Evaluates a list of rules against a context (e.g. quantity, totalAmount).
      */

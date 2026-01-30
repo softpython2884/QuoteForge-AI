@@ -121,7 +121,25 @@ export class QuotesService {
         return quote;
     }
 
-    async findAll() {
-        return this.prisma.quote.findMany({ include: { lines: true } });
+    async findAll(companyId?: string) {
+        const where = companyId ? { companyId } : {};
+        return this.prisma.quote.findMany({ where, include: { lines: true }, orderBy: { createdAt: 'desc' } });
+    }
+
+    async findOne(id: string) {
+        const quote = await this.prisma.quote.findUnique({
+            where: { id },
+            include: { lines: true, auditLogs: true }
+        });
+        if (!quote) throw new NotFoundException('Quote not found');
+        return quote;
+    }
+
+    async findByCustomer(email: string) {
+        return this.prisma.quote.findMany({
+            where: { customerEmail: email }, // Assuming customerEmail is populated or we filter by name for now? Schema has customerEmail
+            include: { lines: true },
+            orderBy: { createdAt: 'desc' }
+        });
     }
 }
