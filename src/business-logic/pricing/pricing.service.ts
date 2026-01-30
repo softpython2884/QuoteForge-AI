@@ -29,12 +29,21 @@ export class PricingService {
 
         if (requestedUnitId !== productUnitId) {
             const converted = await this.unitsService.convert(companyId, quantity, requestedUnitId, productUnitId);
-            // If conversion fails, we might throw or assume 1-to-1 with warning.
-            // For production, we throw.
             if (converted === null) {
                 throw new Error(`Conversion failed from ${requestedUnitId} to ${productUnitId}`);
             }
             finalQuantity = converted;
+
+            // Round up for discrete units (Packaging/Pieces)
+            const discreteUnits = ['unit_pc', 'unit_roll', 'unit_box'];
+            if (discreteUnits.includes(productUnitId)) {
+                const rounded = Math.ceil(finalQuantity);
+                if (rounded !== finalQuantity) {
+                    this.logger.log(`Rounding up ${finalQuantity} to ${rounded} for discrete unit ${productUnitId}`);
+                    finalQuantity = rounded;
+                }
+            }
+
             conversionFactor = finalQuantity / quantity;
         }
 

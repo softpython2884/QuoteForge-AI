@@ -24,7 +24,8 @@ export class CreateProductDto {
     @IsNotEmpty()
     currency: string;
 
-    @IsUUID()
+    @IsString()
+    @IsNotEmpty()
     unitId: string;
 
     @IsString()

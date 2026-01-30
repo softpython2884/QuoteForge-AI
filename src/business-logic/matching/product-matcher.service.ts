@@ -22,7 +22,10 @@ export class ProductMatcherService {
             // For MVP (50 items), strict is risky if AI hallucinates category.
         }
 
-        const products = await this.prisma.product.findMany({ where });
+        const products = await this.prisma.product.findMany({
+            where,
+            include: { unit: true }
+        });
 
         // 2. Score Candidates
         const matches: ProductMatch[] = products.map(p => {

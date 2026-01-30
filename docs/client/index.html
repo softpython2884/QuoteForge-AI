@@ -185,14 +185,17 @@
             tbody.innerHTML = '';
 
             quote.lines.forEach(line => {
+                const meta = line.metadata ? JSON.parse(line.metadata) : {};
+                const unitSymbol = meta.unitSymbol || '';
+
                 const tr = document.createElement('tr');
                 tr.className = "border-b last:border-0";
                 tr.innerHTML = `
                     <td class="py-3">
                         ${line.description}
-                        <div class="text-xs text-gray-400">${line.metadata ? JSON.parse(line.metadata).category_hint || '' : ''}</div>
+                        <div class="text-xs text-gray-400">${meta.aiOriginal?.category_hint || ''}</div>
                     </td>
-                    <td class="py-3 text-right">${line.quantity}</td>
+                    <td class="py-3 text-right">${line.quantity} ${unitSymbol}</td>
                     <td class="py-3 text-right">${Number(line.unitPrice).toFixed(2)}</td>
                     <td class="py-3 text-right font-medium">${Number(line.totalPrice).toFixed(2)}</td>
                 `;
