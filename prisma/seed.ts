@@ -37,14 +37,13 @@ async function main() {
     const conversions = [
         // 1 Box of 60x60cm tiles (4 tiles) = 1.44 m2
         { from: 'unit_box', to: 'unit_m2', factor: 1.44 },
+
         // 1 Roll of Glass Wool = 12 m2 (typical)
         { from: 'unit_roll', to: 'unit_m2', factor: 12.0 },
-        // 10L Paint Pot covers 100 m2 (10m2/L)
-        // This is complex, usually we buy pots.
-        // Let's say we want to convert m2 -> liter -> pot
-        // Here we define: 1 Liter = 0.1 POT (if pot is 10L). No, keeping it simple.
-        // Let's define: 1 Liter covers 10 m2.
-        // { from: 'unit_l', to: 'unit_m2', factor: 10.0 } // 1L = 10m2 Coverage
+
+        // Metal Studs: Sold by Piece (unit_pc), often used as Linear Meters.
+        // Assume 1 stud = 3.0m
+        { from: 'unit_pc', to: 'unit_lm', factor: 3.0 },
     ];
 
     /*

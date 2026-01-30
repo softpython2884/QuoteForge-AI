@@ -88,7 +88,15 @@ async function run() {
         console.log('\n🎉 SYSTEM VERIFICATION COMPLETED SUCCESSFULLY.');
 
     } catch (error: any) {
-        console.error('❌ VERIFICATION FAILED:', error.response?.data || error.message);
+        console.error('❌ VERIFICATION FAILED:', error.message);
+        if (error.response) {
+            console.error('Data:', JSON.stringify(error.response.data, null, 2));
+            console.error('Status:', error.response.status);
+        } else if (error.request) {
+            console.error('No Response. Request:', error.request);
+        } else {
+            console.error('Error Config:', error.config);
+        }
         process.exit(1);
     }
 }

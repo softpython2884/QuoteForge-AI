@@ -52,8 +52,23 @@ export class QuotesService {
             // B. Pricing Engine (Strict Math)
             try {
                 // Ensure Quantity logic (if AI gives 0, assume 1 or flag error)
+                // Ensure Quantity logic (if AI gives 0, assume 1 or flag error)
                 const qty = item.quantity > 0 ? item.quantity : 1;
-                const unit = item.unit || 'pc'; // Default to piece if missing
+
+                // Normalization: Map AI symbols to DB Unit IDs
+                const unitMap: Record<string, string> = {
+                    'm': 'unit_lm',
+                    'lm': 'unit_lm',
+                    'm2': 'unit_m2',
+                    'pc': 'unit_pc',
+                    'box': 'unit_box',
+                    'h': 'unit_hr',
+                    'hr': 'unit_hr',
+                    'hour': 'unit_hr',
+                    'roll': 'unit_roll',
+                    'l': 'unit_l'
+                };
+                const unit = unitMap[item.unit?.toLowerCase()] || item.unit || 'unit_pc';
 
                 const pricing = await this.pricingService.calculateLinePrice(product, qty, unit, dto.companyId);
 
