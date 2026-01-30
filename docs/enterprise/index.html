@@ -68,10 +68,32 @@
                 Catalog</button>
         </div>
 
+        <!-- Edit Modal -->
+        <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+                <h3 class="text-xl font-bold mb-4">Edit Product</h3>
+                <input type="hidden" id="editId">
+                <div class="mb-4">
+                    <label class="block text-sm mb-1">Name</label>
+                    <input type="text" id="editName" class="w-full border p-2 rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm mb-1">Price</label>
+                    <input type="number" id="editPrice" class="w-full border p-2 rounded">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal()"
+                        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                    <button onclick="saveEdit()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Catalog Preview -->
         <div class="mt-12">
             <h3 class="text-lg font-bold text-orange-900 mb-4">Current Products</h3>
-            <div id="product-list" class="space-y-2">
+            <div id="product-list" class="space-y-3">
                 <!-- Items -->
             </div>
         </div>
@@ -84,7 +106,6 @@
         async function login() {
             const companyId = document.getElementById('companyId').value;
             try {
-                // Enterprise usually needs auth too, here reusing basic auth
                 const res = await axios.post(`${API_URL}/auth/login`, { companyId });
                 token = res.data.access_token;
                 document.getElementById('auth-status').innerText = "Access Granted.";
@@ -93,7 +114,7 @@
                 document.getElementById('product-form').classList.remove('opacity-50', 'pointer-events-none');
                 loadProducts(companyId);
             } catch (e) {
-                alert('Login failed');
+                alert('Login failed: ' + (e.response?.data?.message || e.message));
             }
         }
 
@@ -109,12 +130,11 @@
             };
 
             try {
-                // Note: Auth isn't strict on this endpoint in current logic (public catalog), but good to have
                 await axios.post(`${API_URL}/products`, payload);
                 alert('Product Created!');
                 loadProducts(companyId);
             } catch (e) {
-                alert('Error creating product: ' + e.message);
+                alert('Error creating product: ' + (e.response?.data?.message || e.message));
             }
         }
 
@@ -125,15 +145,57 @@
                 list.innerHTML = '';
                 res.data.forEach(p => {
                     const div = document.createElement('div');
-                    div.className = "bg-white p-4 rounded shadow-sm border border-orange-100 flex justify-between";
+                    div.className = "bg-white p-4 rounded shadow-sm border border-orange-100 flex justify-between items-center";
                     div.innerHTML = `
-                        <span class="font-medium text-gray-800">${p.name}</span>
-                        <span class="text-orange-600 font-bold">${p.basePrice} €</span>
+                        <div>
+                            <span class="font-medium text-gray-800 block">${p.name}</span>
+                            <span class="text-xs text-gray-500">${p.category} | ${p.unit?.symbol || p.unitId}</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-orange-600 font-bold">${Number(p.basePrice).toFixed(2)} €</span>
+                            <button onclick="openEdit('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.basePrice})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                            <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
+                        </div>
                     `;
                     list.appendChild(div);
                 });
             } catch (e) {
                 console.error(e);
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Delete this product?')) return;
+            try {
+                await axios.post(`${API_URL}/products/${id}/delete`);
+                loadProducts(document.getElementById('companyId').value);
+            } catch (e) {
+                alert('Delete failed: ' + (e.response?.data?.message || e.message));
+            }
+        }
+
+        function openEdit(id, name, price) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editPrice').value = price;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        async function saveEdit() {
+            const id = document.getElementById('editId').value;
+            const name = document.getElementById('editName').value;
+            const price = Number(document.getElementById('editPrice').value);
+
+            try {
+                await axios.post(`${API_URL}/products/${id}`, { name, basePrice: price });
+                closeModal();
+                loadProducts(document.getElementById('companyId').value);
+            } catch (e) {
+                alert('Update failed: ' + (e.response?.data?.message || e.message));
             }
         }
     </script>

@@ -14,7 +14,8 @@ export class AiService {
             return;
         }
         const genAI = new GoogleGenerativeAI(apiKey);
-        this.model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        // User requested 2.5 Flash, mapping to 2.0 Flash which is the standard next-gen low-cost model
+        this.model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     }
 
     async extractEntities(text: string): Promise<any> {
