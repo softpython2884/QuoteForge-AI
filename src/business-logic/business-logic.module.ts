@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { RulesService } from './rules/rules.service';
-import { RulesEngine } from './rules/rules.engine';
-import { UnitConversionService } from './units/unit-conversion.service';
+import { RulesModule } from './rules/rules.module';
+import { PricingModule } from './pricing/pricing.module';
+import { MatcherModule } from './matching/matcher.module';
 
 @Module({
-    providers: [RulesService, RulesEngine, UnitConversionService],
-    exports: [RulesService, RulesEngine, UnitConversionService],
+    imports: [RulesModule, PricingModule, MatcherModule],
+    exports: [RulesModule, PricingModule, MatcherModule],
 })
 export class BusinessLogicModule { }

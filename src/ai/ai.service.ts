@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { AiExtractionResult } from './dto/ai-extraction.dto';
 
 @Injectable()
 export class AiService {
@@ -18,7 +19,7 @@ export class AiService {
         this.model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     }
 
-    async extractEntities(text: string): Promise<any> {
+    async extractEntities(text: string): Promise<AiExtractionResult> {
         if (!this.model) {
             throw new Error("AI Model not initialized");
         }
@@ -27,28 +28,30 @@ export class AiService {
       You are an expert Quantity Surveyor and Construction Estimator.
       Analyze the following customer request and extract the construction requirements into a structured JSON format.
       
-      RULES:
-      1. ONLY return valid JSON. No markdown, no commentary.
-      2. Detect the "intent" (e.g., "installation", "renovation").
-      3. Extract numeric values with their units.
-      4. Try to infer the material category.
-      
-      USER REQUEST:
-      "${text}"
+      CORE PRINCIPLES:
+      - ZERO HALLUCINATION: Do not invent items not implied by the text.
+      - NO PRICING: You are a translator. You do NOT set prices. Never include a "price" or "cost" field.
+      - STRICT JSON: Output only valid JSON.
       
       OUTPUT SCHEMA:
       {
-        "intent": string,
+        "intent": "NEW_QUOTE" | "STATUS_CHECK" | "UNKNOWN",
         "items": [
           {
-             "description": string,
-             "quantity": number,
-             "unit": string,
-             "material_hint": string
+             "description": string (original text reference),
+             "quantity": number (parsed value),
+             "unit": string (standardized symbol e.g., m2, lm, pc),
+             "material_hint": string (e.g., "Oak", "Ceramic", "Copper"),
+             "dimensions_hint": string (e.g., "60x60", "15mm"),
+             "category_hint": string (e.g., "FLOORING", "PLUMBING")
           }
         ],
-        "confidence": number (0-1)
+        "confidence": number (0-1),
+        "warnings": string[] (any ambiguity found)
       }
+
+      USER REQUEST:
+      "${text}"
     `;
 
         try {

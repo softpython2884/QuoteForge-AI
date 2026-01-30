@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { AiService } from '../ai/ai.service';
-import { RulesEngine } from '../business-logic/rules/rules.engine';
-import { UnitConversionService } from '../business-logic/units/unit-conversion.service';
+import { ProductMatcherService } from '../business-logic/matching/product-matcher.service';
+import { PricingService } from '../business-logic/pricing/pricing.service';
 import { GenerateQuoteDto } from './dto/generate-quote.dto';
-import { Quote, Rule } from '@prisma/client';
+import { Quote } from '@prisma/client';
 
 @Injectable()
 export class QuotesService {
@@ -13,120 +13,107 @@ export class QuotesService {
     constructor(
         private prisma: PrismaService,
         private aiService: AiService,
-        private rulesEngine: RulesEngine,
-        private conversionService: UnitConversionService
+        private matcherService: ProductMatcherService,
+        private pricingService: PricingService
     ) { }
 
     async generateFromText(dto: GenerateQuoteDto) {
         this.logger.log(`Processing quote request for: ${dto.customerName}`);
 
-        // 1. AI Extraction
+        // 1. AI Extraction (Understanding)
         const aiResult = await this.aiService.extractEntities(dto.requestText);
-        this.logger.log(`AI Extraction complete. Confidence: ${aiResult.confidence}`);
+        this.logger.log(`AI Confidence: ${aiResult.confidence} | Intent: ${aiResult.intent}`);
 
-        if (aiResult.confidence < 0.7) {
-            throw new Error("AI Confidence too low. Please provide more details.");
+        // 2. Validation
+        if (aiResult.confidence < 0.70) {
+            // In Production, maybe flag for human review instead of error
+            this.logger.warn(`Low confidence score.`);
         }
 
-        // 2. Fetch Rules
-        const rules = await this.prisma.rule.findMany({ where: { companyId: dto.companyId } });
-
-        // 3. Build Line Items
         const quoteLines = [];
         const validationErrors = [];
         let totalAmount = 0;
 
+        // 3. Orchestration Loop
         for (const item of aiResult.items) {
-            // Simple Matcher Strategy
-            const product = await this.prisma.product.findFirst({
-                where: {
-                    companyId: dto.companyId,
-                    name: { contains: item.material_hint }
-                },
-                include: { unit: true }
-            });
+            // A. Product Matcher
+            // Use material_hint or description as search query
+            const query = `${item.material_hint || ''} ${item.description}`;
+            const match = await this.matcherService.findBestMatch(dto.companyId, query, item.category_hint);
 
-            if (!product) {
-                validationErrors.push(`Product not found for hint: ${item.material_hint}`);
+            if (!match) {
+                validationErrors.push(`No product found for description: "${item.description}"`);
                 continue;
             }
 
-            let unitPrice = Number(product.basePrice);
-            let quantity = item.quantity; // e.g. 60 (m2)
+            const product = match.product;
+            this.logger.debug(`Matched "${query}" -> ${product.name} (Score: ${match.score})`);
 
-            // Unit Conversion / Packaging Logic
-            // If product is sold in packs but requested in m2, we need to convert.
-            // For MVP, if product has a `unit` that differs from the detected unit (string), logic needed.
-            // Here we assume mapping is done via simple lookup or the product metadata implies coverage.
-            // MOCK: Checking if product description contains coverage info or using a standard packaging factor.
-            // Ideally, Product model should have 'packagingSize' field. We will simulate it.
-            const packagingSize = 1.0; // Assume 1 unit = 1 unit for now, or fetch from product properties
+            // B. Pricing Engine (Strict Math)
+            try {
+                // Ensure Quantity logic (if AI gives 0, assume 1 or flag error)
+                const qty = item.quantity > 0 ? item.quantity : 1;
+                const unit = item.unit || 'pc'; // Default to piece if missing
 
-            const finalQuantity = this.conversionService.calculatePacks(quantity, packagingSize);
+                const pricing = await this.pricingService.calculateLinePrice(product, qty, unit, dto.companyId);
 
-            // Apply Rules (Deterministic)
-            const context = {
-                quantity: finalQuantity,
-                price: unitPrice,
-                productCategory: product.category,
-                appliedRules: []
-            };
-            const modifiedContext = this.rulesEngine.applyRules(context, rules);
+                totalAmount += pricing.total;
 
-            unitPrice = modifiedContext.price;
+                quoteLines.push({
+                    productId: product.id,
+                    description: item.description, // User text
+                    quantity: pricing.quantity, // Converted Quantity (e.g. Packs)
+                    unitPrice: pricing.unitPrice,
+                    totalPrice: pricing.total,
+                    metadata: {
+                        matchScore: match.score,
+                        aiOriginal: item,
+                        pricingTrace: pricing.appliedRules, // List of rules applied
+                        requestedQty: qty,
+                        requestedUnit: unit
+                    }
+                });
 
-            const lineTotal = unitPrice * finalQuantity;
-            totalAmount += lineTotal;
-
-            quoteLines.push({
-                productId: product.id,
-                description: item.description || product.name,
-                quantity: finalQuantity,
-                unitPrice: unitPrice,
-                totalPrice: lineTotal,
-                metadata: {
-                    originalAiItem: item,
-                    appliedRules: modifiedContext.appliedRules,
-                    originalQuantity: quantity
-                }
-            });
+            } catch (e) {
+                this.logger.error(`Pricing Error for ${product.name}`, e.message);
+                validationErrors.push(`Pricing Error for ${product.name}: ${e.message}`);
+            }
         }
 
-        // Anti-Hallucination: Check for zero price
-        if (totalAmount <= 0) {
-            validationErrors.push("Total amount is zero. Check pricing rules.");
-        }
-
-        // 4. Create Quote in DB
+        // 4. Persistence
         const quote = await this.prisma.quote.create({
             data: {
                 companyId: dto.companyId,
                 customerName: dto.customerName,
-                reference: `Q-${Date.now()}`,
+                reference: `Q-${Date.now().toString().slice(-6)}`,
                 inputPrompt: dto.requestText,
-                aiResponse: JSON.stringify(aiResult), // SQLite String
-                validationErrors: validationErrors.length > 0 ? JSON.stringify(validationErrors) : undefined,
+                aiResponse: JSON.stringify(aiResult),
+                validationErrors: validationErrors.length > 0 ? JSON.stringify(validationErrors) : null,
                 isValid: validationErrors.length === 0,
                 totalAmount: totalAmount,
                 lines: {
                     create: quoteLines.map(line => ({
-                        ...line,
-                        metadata: line.metadata ? JSON.stringify(line.metadata) : undefined
+                        productId: line.productId,
+                        description: line.description,
+                        quantity: line.quantity,
+                        unitPrice: line.unitPrice,
+                        totalPrice: line.totalPrice,
+                        metadata: JSON.stringify(line.metadata)
                     }))
                 }
             },
             include: { lines: true }
         });
 
-        // 5. Audit Log
+        // 5. Audit
         await this.prisma.auditLog.create({
             data: {
                 quoteId: quote.id,
                 action: 'QUOTE_GENERATED',
                 details: JSON.stringify({
-                    prompt: dto.requestText,
                     aiConfidence: aiResult.confidence,
-                    rulesAppliedCount: quoteLines.length
+                    itemCount: quoteLines.length,
+                    errors: validationErrors
                 })
             }
         });

@@ -31,6 +31,14 @@ export class CreateProductDto {
     @IsOptional()
     category?: string;
 
+    @IsString()
+    @IsOptional()
+    material?: string;
+
+    @IsString()
+    @IsOptional()
+    dimensions?: string;
+
     @IsArray()
     @IsString({ each: true })
     @IsOptional()

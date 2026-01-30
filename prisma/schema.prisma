@@ -22,6 +22,7 @@ model Company {
   quotes    Quote[]
   rules     Rule[]
   units     Unit[]
+  conversions UnitConversion[]
 }
 
 model Unit {
@@ -33,6 +34,9 @@ model Unit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   products  Product[]
+  
+  conversionsFrom UnitConversion[] @relation("FromUnit")
+  conversionsTo   UnitConversion[] @relation("ToUnit")
 }
 
 model Product {
@@ -53,11 +57,30 @@ model Product {
 
   // Categorization
   category    String?
+  material    String? // e.g., "Wood", "Ceramic"
+  dimensions  String? // e.g., "60x60cm", "10L"
   tags        String? // SQLite does not support arrays, changed to optional String (CSV)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   quoteLines  QuoteLine[]
+}
+
+model UnitConversion {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  
+  fromUnitId  String
+  fromUnit    Unit     @relation("FromUnit", fields: [fromUnitId], references: [id])
+  
+  toUnitId    String
+  toUnit      Unit     @relation("ToUnit", fields: [toUnitId], references: [id])
+  
+  factor      Decimal  // Multiplier: 1 pack = 1.5 m2 -> factor 1.5
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Rule {
