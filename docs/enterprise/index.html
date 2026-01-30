@@ -63,8 +63,10 @@
                     <input type="number" id="pPrice" placeholder="45.00" class="w-full border p-2 rounded">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Unit ID</label>
-                    <input type="text" id="pUnit" value="unit_m2" class="w-full border p-2 rounded">
+                    <label class="block text-sm font-medium text-gray-700">Unit</label>
+                    <select id="pUnit" class="w-full border p-2 rounded bg-white">
+                        <option value="">Loading units...</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Currency</label>
@@ -72,6 +74,8 @@
                         class="w-full border p-2 rounded bg-gray-100">
                 </div>
             </div>
+
+            <div id="create-error" class="mb-4 text-red-600 text-sm hidden"></div>
 
             <button onclick="createProduct()"
                 class="w-full bg-orange-600 text-white py-3 rounded font-bold hover:bg-orange-700 shadow-lg">Add to
@@ -139,13 +143,27 @@
 
                 document.getElementById('product-form').classList.remove('opacity-50', 'pointer-events-none');
                 loadProducts(companyId);
+                fetchUnits(companyId);
             } catch (e) {
                 alert('Login failed: ' + (e.response?.data?.message || e.message));
             }
         }
 
+        async function fetchUnits(companyId) {
+            try {
+                const res = await axios.get(`${API_URL}/units?companyId=${companyId}`);
+                const select = document.getElementById('pUnit');
+                select.innerHTML = res.data.map(u => `<option value="${u.id}">${u.name} (${u.symbol})</option>`).join('');
+            } catch (e) {
+                console.error('Failed to load units', e);
+            }
+        }
+
         async function createProduct() {
             const companyId = document.getElementById('companyId').value;
+            const errorDiv = document.getElementById('create-error');
+            errorDiv.classList.add('hidden');
+
             const payload = {
                 companyId: companyId,
                 name: document.getElementById('pName').value,
@@ -157,12 +175,22 @@
                 currency: 'EUR'
             };
 
+            if (!payload.unitId) {
+                alert('Please select a unit');
+                return;
+            }
+
             try {
                 await axios.post(`${API_URL}/products`, payload);
                 alert('Product Created!');
                 loadProducts(companyId);
+                // Clear form
+                document.getElementById('pName').value = '';
+                document.getElementById('pPrice').value = '';
             } catch (e) {
-                alert('Error creating product: ' + (e.response?.data?.message || e.message));
+                const msg = e.response?.data?.message || e.message;
+                errorDiv.innerText = 'Error: ' + msg;
+                errorDiv.classList.remove('hidden');
             }
         }
 
