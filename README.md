@@ -87,4 +87,4 @@ See [LICENSE](./LICENSE) for details.
 **Credit**: NightFury / FogeNetwork.
 
 ---
-*Built with ❤️ by Antigravity.*
+*Built with ❤️ by Night.*
