@@ -15,21 +15,21 @@ export class AiService {
             return;
         }
         const genAI = new GoogleGenerativeAI(apiKey);
-        // User requested 2.5 Flash, mapping to 2.0 Flash which is the standard next-gen low-cost model
         this.model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     }
 
-    async extractEntities(text: string): Promise<AiExtractionResult> {
+    async extractEntities(text: string, images: string[] = []): Promise<AiExtractionResult> {
         if (!this.model) {
             throw new Error("AI Model not initialized");
         }
 
-        const prompt = `
+        const promptText = `
       You are an expert Quantity Surveyor and Construction Estimator.
-      Analyze the following customer request and extract the construction requirements into a structured JSON format.
+      Analyze the following customer request (and optional images) and extract the construction requirements into a structured JSON format.
       
       CORE PRINCIPLES:
-      - ZERO HALLUCINATION: Do not invent items not implied by the text.
+      - EXPERT INFERENCE: If the user describes a high-level task (e.g., "Build a partition wall"), you MUST break it down into standard components (e.g., "Plasterboard", "Metal Studs", "Insulation", "Labor") based on standard industry ratios.
+      - ACCURATE QUANTITIES: If detailed dimensions are provided, calculate the required areas/volumes. If implied, use standard heights (e.g., 2.5m for walls).
       - NO PRICING: You are a translator. You do NOT set prices. Never include a "price" or "cost" field.
       - STRICT JSON: Output only valid JSON.
       
@@ -38,16 +38,16 @@ export class AiService {
         "intent": "NEW_QUOTE" | "STATUS_CHECK" | "UNKNOWN",
         "items": [
           {
-             "description": string (original text reference),
-             "quantity": number (parsed value),
-             "unit": string (standardized symbol e.g., m2, lm, pc),
-             "material_hint": string (e.g., "Oak", "Ceramic", "Copper"),
-             "dimensions_hint": string (e.g., "60x60", "15mm"),
-             "category_hint": string (e.g., "FLOORING", "PLUMBING")
+             "description": string (the item name, e.g. "Plasterboard BA13"),
+             "quantity": number (calculated quantity),
+             "unit": string (standardized symbol e.g., m2, lm, pc, hr),
+             "material_hint": string (e.g., "Gypsum", "Steel"),
+             "dimensions_hint": string (e.g., "250x120", "48mm"),
+             "category_hint": string (e.g., "DRYWALL", "LABOR")
           }
         ],
         "confidence": number (0-1),
-        "warnings": string[] (any ambiguity found)
+        "warnings": string[] (any assumptions made, e.g. "Assumed wall height 2.5m")
       }
 
       USER REQUEST:
@@ -55,7 +55,31 @@ export class AiService {
     `;
 
         try {
-            const result = await this.model.generateContent(prompt);
+            const parts: any[] = [{ text: promptText }];
+
+            if (images && images.length > 0) {
+                images.forEach(base64 => {
+                    // Extract mime type if present "data:image/png;base64,..."
+                    const match = base64.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+                    if (match) {
+                        parts.push({
+                            inlineData: {
+                                mimeType: match[1],
+                                data: match[2]
+                            }
+                        });
+                    } else {
+                        parts.push({
+                            inlineData: {
+                                mimeType: 'image/jpeg',
+                                data: base64
+                            }
+                        });
+                    }
+                });
+            }
+
+            const result = await this.model.generateContent(parts);
             const response = await result.response;
             const textResponse = response.text();
 
@@ -66,7 +90,6 @@ export class AiService {
         }
     }
 
-    // Helper to remove markdown usually returned by LLMs (```json ... ```)
     private cleanAndParseJson(text: string): any {
         const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanText);

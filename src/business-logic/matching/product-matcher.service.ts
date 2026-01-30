@@ -34,7 +34,7 @@ export class ProductMatcherService {
         matches.sort((a, b) => b.score - a.score);
 
         // 4. Return Top if reliable
-        if (matches.length > 0 && matches[0].score > 0.3) {
+        if (matches.length > 0 && matches[0].score > 0.4) {
             return matches[0];
         }
 

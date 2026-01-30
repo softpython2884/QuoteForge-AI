@@ -21,7 +21,7 @@ export class QuotesService {
         this.logger.log(`Processing quote request for: ${dto.customerName}`);
 
         // 1. AI Extraction (Understanding)
-        const aiResult = await this.aiService.extractEntities(dto.requestText);
+        const aiResult = await this.aiService.extractEntities(dto.requestText, dto.images);
         this.logger.log(`AI Confidence: ${aiResult.confidence} | Intent: ${aiResult.intent}`);
 
         // 2. Validation

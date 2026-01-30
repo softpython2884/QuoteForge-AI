@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsArray, IsOptional } from 'class-validator';
 
 export class GenerateQuoteDto {
     @IsString()
@@ -11,5 +11,11 @@ export class GenerateQuoteDto {
 
     @IsString()
     @IsNotEmpty()
+    @IsString()
+    @IsNotEmpty()
     customerName: string;
+
+    @IsArray()
+    @IsOptional()
+    images?: string[]; // Array of Base64 strings
 }

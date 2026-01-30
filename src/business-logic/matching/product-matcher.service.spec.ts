@@ -46,4 +46,17 @@ describe('ProductMatcherService', () => {
 
         expect(match).toBeNull();
     });
+
+    it('should filter out garbage matches (Regression: Door Handle vs Wall)', async () => {
+        const products = [
+            { id: 'p1', name: 'Door Handle Modern', category: 'CARPENTRY', material: 'Steel' }
+        ];
+        mockPrismaService.product.findMany.mockResolvedValue(products);
+
+        // Score was ~0.31
+        const query = "le mute c genre un gros cube avec un mure de 1M8 de haut j'le veut en blanc";
+        const match = await service.findBestMatch('comp1', query);
+
+        expect(match).toBeNull();
+    });
 });

@@ -17,12 +17,23 @@
             <div class="flex gap-2">
                 <input type="text" id="companyId" placeholder="Admin ID"
                     class="bg-slate-800 border border-slate-700 rounded px-3 py-1 text-sm text-white focus:outline-none focus:border-indigo-500">
-                <button onclick="login()"
+                <button id="login-btn" onclick="login()"
                     class="bg-indigo-600 text-white px-4 py-1 rounded text-sm hover:bg-indigo-700">Connect</button>
             </div>
         </div>
 
-        <div class="bg-slate-800 rounded-xl overflow-hidden shadow-2xl border border-slate-700">
+        <div class="flex gap-4 mb-4">
+            <button onclick="switchTab('logs')"
+                class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm font-medium transition">Audit
+                Logs</button>
+            <button onclick="switchTab('rules')"
+                class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm font-medium transition">Pricing
+                Rules</button>
+        </div>
+
+        <!-- Logs Section -->
+        <div id="logs-section"
+            class="tab-content bg-slate-800 rounded-xl overflow-hidden shadow-2xl border border-slate-700">
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-950 text-slate-400 uppercase text-xs">
@@ -42,10 +53,63 @@
                 </table>
             </div>
         </div>
+
+        <!-- Rules Section -->
+        <div id="rules-section" class="tab-content hidden grid grid-cols-3 gap-6">
+            <!-- Create Rule -->
+            <div class="col-span-1 bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit">
+                <h2 class="text-lg font-bold mb-4 text-white">New Rule</h2>
+                <div class="space-y-3">
+                    <input id="ruleName" type="text" placeholder="Rule Name (e.g. Bulk Discount)"
+                        class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
+
+                    <h3 class="text-xs text-slate-400 uppercase mt-2">Condition</h3>
+                    <div class="grid grid-cols-3 gap-2">
+                        <select id="condField"
+                            class="bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white">
+                            <option value="quantity">Qty</option>
+                            <option value="total">Total</option>
+                        </select>
+                        <select id="condOp"
+                            class="bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white">
+                            <option value="gte">>=</option>
+                            <option value="lte">
+                                <=< /option>
+                        </select>
+                        <input id="condVal" type="number" placeholder="50"
+                            class="bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white">
+                    </div>
+
+                    <h3 class="text-xs text-slate-400 uppercase mt-2">Action</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="actType"
+                            class="bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white">
+                            <option value="DISCOUNT_PERCENT">Disc %</option>
+                            <option value="SURCHARGE_FIXED">Fee +</option>
+                        </select>
+                        <input id="actVal" type="number" placeholder="0.10"
+                            class="bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white">
+                    </div>
+
+                    <button onclick="createRule()"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded mt-2">Create
+                        Rule</button>
+                </div>
+            </div>
+
+            <!-- List Rules -->
+            <div class="col-span-2 bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-lg font-bold mb-4 text-white">Active Rules</h2>
+                <div id="rules-list" class="space-y-2">
+                    <p class="text-slate-500 italic">No rules loaded.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         let token = null;
+        let currentTab = 'logs';
         const API_URL = 'http://localhost:3000';
 
         async function login() {
@@ -53,10 +117,21 @@
             try {
                 const res = await axios.post(`${API_URL}/auth/login`, { companyId });
                 token = res.data.access_token;
-                fetchLogs();
+                document.getElementById('login-btn').innerText = "Connected";
+                document.getElementById('login-btn').classList.replace('bg-indigo-600', 'bg-green-600');
+                switchTab('logs');
             } catch (e) {
                 alert('Login failed');
             }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tab + '-section').classList.remove('hidden');
+
+            if (tab === 'logs') fetchLogs();
+            if (tab === 'rules') fetchRules();
         }
 
         async function fetchLogs() {
@@ -65,36 +140,91 @@
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 renderLogs(res.data);
-            } catch (e) {
-                console.error(e);
-                alert('Failed to fetch logs');
-            }
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchRules() {
+            const companyId = document.getElementById('companyId').value;
+            try {
+                const res = await axios.get(`${API_URL}/rules?companyId=${companyId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                renderRules(res.data);
+            } catch (e) { console.error(e); }
+        }
+
+        async function createRule() {
+            const companyId = document.getElementById('companyId').value;
+            const name = document.getElementById('ruleName').value;
+            const field = document.getElementById('condField').value;
+            const operator = document.getElementById('condOp').value;
+            const value = parseFloat(document.getElementById('condVal').value);
+            const actionType = document.getElementById('actType').value;
+            const actionVal = parseFloat(document.getElementById('actVal').value);
+
+            const payload = {
+                companyId,
+                name,
+                priority: 1,
+                conditions: { field, operator, value },
+                actions: { type: actionType, value: actionVal }
+            };
+
+            try {
+                await axios.post(`${API_URL}/rules`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                fetchRules();
+                alert('Rule Created!');
+            } catch (e) { alert('Error creating rule'); }
+        }
+
+        async function deleteRule(id) {
+            if (!confirm('Delete rule?')) return;
+            try {
+                await axios.delete(`${API_URL}/rules/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                fetchRules();
+            } catch (e) { alert('Error deleting rule'); }
         }
 
         function renderLogs(logs) {
             const tbody = document.getElementById('logs-body');
             tbody.innerHTML = '';
-
             logs.forEach(log => {
                 const details = log.details || {};
-                const date = new Date(log.timestamp).toLocaleString();
-
+                const date = new Date(log.createdAt || log.timestamp).toLocaleString();
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-750 transition";
                 tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono text-sm">${date}</td>
-                    <td class="px-6 py-4">
-                        <span class="bg-blue-900 text-blue-300 py-1 px-2 rounded text-xs font-bold">${log.action}</span>
-                    </td>
+                    <td class="px-6 py-4"><span class="bg-blue-900 text-blue-300 py-1 px-2 rounded text-xs font-bold">${log.action}</span></td>
                     <td class="px-6 py-4 text-slate-400 font-mono text-xs">${log.quoteId || '-'}</td>
-                    <td class="px-6 py-4 text-slate-300">
-                        ${details.aiConfidence ? (details.aiConfidence * 100).toFixed(0) + '%' : '-'}
-                    </td>
-                    <td class="px-6 py-4">
-                        <pre class="text-xs text-slate-500 max-w-xs overflow-hidden text-ellipsis">${JSON.stringify(details, null, 2)}</pre>
-                    </td>
+                    <td class="px-6 py-4 text-slate-300">${details.aiConfidence ? (details.aiConfidence * 100).toFixed(0) + '%' : '-'}</td>
+                    <td class="px-6 py-4"><pre class="text-xs text-slate-500 max-w-xs overflow-hidden text-ellipsis">${JSON.stringify(details, null, 2)}</pre></td>
                 `;
                 tbody.appendChild(tr);
+            });
+        }
+
+        function renderRules(rules) {
+            const list = document.getElementById('rules-list');
+            list.innerHTML = '';
+            rules.forEach(rule => {
+                const cond = typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions;
+                const act = typeof rule.actions === 'string' ? JSON.parse(rule.actions) : rule.actions;
+
+                const div = document.createElement('div');
+                div.className = "bg-slate-700 p-4 rounded mb-2 flex justify-between items-center";
+                div.innerHTML = `
+                    <div>
+                        <h3 class="font-bold text-white">${rule.name}</h3>
+                        <p class="text-sm text-slate-300">If <b>${cond.field} ${cond.operator} ${cond.value}</b> then <b>${act.type} ${act.value}</b></p>
+                    </div>
+                    <button onclick="deleteRule('${rule.id}')" class="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                `;
+                list.appendChild(div);
             });
         }
     </script>
