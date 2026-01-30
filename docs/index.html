@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-        mermaid.initialize({ startOnLoad: true });
+        mermaid.initialize({
+            startOnLoad: true,
+            flowchart: { useMaxWidth: false, htmlLabels: true }
+        });
     </script>
     <style>
         .gradient-text {
@@ -15,14 +19,31 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         .step-card {
             transition: transform 0.2s;
         }
+
         .step-card:hover {
             transform: translateY(-5px);
         }
+
+        /* Force SVG to fill and scale */
+        .mermaid svg {
+            width: 100% !important;
+            height: auto !important;
+            max-width: 1000px;
+            /* Prevent being infinite on ultra wide */
+        }
+
+        .mermaid {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
     </style>
 </head>
+
 <body class="bg-slate-50 text-slate-800 font-sans">
 
     <!-- Navbar -->
@@ -30,13 +51,15 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center">
-                    <span class="text-2xl font-bold tracking-tight">QuoteForge <span class="gradient-text">AI</span></span>
+                    <span class="text-2xl font-bold tracking-tight">QuoteForge <span
+                            class="gradient-text">AI</span></span>
                 </div>
                 <div class="hidden md:flex space-x-8">
                     <a href="#overview" class="text-slate-600 hover:text-indigo-600 font-medium">Overview</a>
                     <a href="#flow" class="text-slate-600 hover:text-indigo-600 font-medium">Logic Flow</a>
                     <a href="#api" class="text-slate-600 hover:text-indigo-600 font-medium">API Reference</a>
-                    <a href="https://github.com/Start-Up-Week-End-Bordeaux/QuoteForge-Ai" target="_blank" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">GitHub</a>
+                    <a href="https://github.com/softpython2884/QuoteForge-AI" target="_blank"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">GitHub</a>
                 </div>
             </div>
         </div>
@@ -58,39 +81,49 @@
     <section id="flow" class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4">
             <h2 class="text-3xl font-bold mb-12 text-center">How It Works</h2>
-            
-            <div class="bg-slate-50 p-8 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex justify-center">
+
+            <div
+                class="bg-slate-50 p-8 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex justify-center">
                 <div class="mermaid">
                     graph LR
-                        A[Customer Input] -->|Raw Text| B(AI Service)
-                        B -->|JSON Intent| C{Orchestrator}
-                        C -->|Matching| D[(Database Catalog)]
-                        D -->|Product Data| E(Rules Engine)
-                        C -->|Context| E
-                        E -->|Price & Logic| F[Final Quote]
-                        F -->|Audit| G[(Audit Log)]
-                        
-                        style B fill:#e0e7ff,stroke:#4338ca,stroke-width:2px
-                        style E fill:#dcfce7,stroke:#15803d,stroke-width:2px
-                        style F fill:#fef3c7,stroke:#b45309,stroke-width:2px
+                    A[Customer Input] -->|Raw Text| B(AI Service)
+                    B -->|JSON Intent| C{Orchestrator}
+                    C -->|Matching| D[(Database Catalog)]
+                    D -->|Product Data| E(Rules Engine)
+                    C -->|Context| E
+                    E -->|Price & Logic| F[Final Quote]
+                    F -->|Audit| G[(Audit Log)]
+
+                    style B fill:#e0e7ff,stroke:#4338ca,stroke-width:2px
+                    style E fill:#dcfce7,stroke:#15803d,stroke-width:2px
+                    style F fill:#fef3c7,stroke:#b45309,stroke-width:2px
                 </div>
             </div>
 
             <div class="grid md:grid-cols-3 gap-8 mt-12">
                 <div class="step-card bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold mb-4">1</div>
+                    <div
+                        class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold mb-4">
+                        1</div>
                     <h3 class="font-bold text-lg mb-2">Intent Extraction</h3>
-                    <p class="text-slate-600 text-sm">Gemini Pro analyzes text to extract quantities, units, and material hints. It never guesses prices.</p>
+                    <p class="text-slate-600 text-sm">Gemini Pro analyzes text to extract quantities, units, and
+                        material hints. It never guesses prices.</p>
                 </div>
                 <div class="step-card bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold mb-4">2</div>
+                    <div
+                        class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold mb-4">
+                        2</div>
                     <h3 class="font-bold text-lg mb-2">Match & Calculate</h3>
-                    <p class="text-slate-600 text-sm">We map intent to real Inventory Items. The Rules Engine applies bulk discounts, unit conversions, and taxes deterministically.</p>
+                    <p class="text-slate-600 text-sm">We map intent to real Inventory Items. The Rules Engine applies
+                        bulk discounts, unit conversions, and taxes deterministically.</p>
                 </div>
                 <div class="step-card bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold mb-4">3</div>
+                    <div
+                        class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold mb-4">
+                        3</div>
                     <h3 class="font-bold text-lg mb-2">Validate & Audit</h3>
-                    <p class="text-slate-600 text-sm">Every step is recorded. If confidence is low or rules are violated, the quote is flagged for human review.</p>
+                    <p class="text-slate-600 text-sm">Every step is recorded. If confidence is low or rules are
+                        violated, the quote is flagged for human review.</p>
                 </div>
             </div>
         </div>
@@ -110,7 +143,7 @@
                 <div class="p-6">
                     <p class="text-gray-600 mb-4">Generates a quote from natural language.</p>
                     <div class="bg-slate-800 rounded-md p-4">
-<pre class="text-green-400 text-sm font-mono scrollbar-hide overflow-auto">
+                        <pre class="text-green-400 text-sm font-mono scrollbar-hide overflow-auto">
 // Request Body
 {
   "requestText": "I need 40m2 of oak flooring.",
@@ -131,7 +164,7 @@
             </div>
 
             <!-- Endpoint 2 -->
-             <div class="mb-8 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <div class="mb-8 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
                 <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center">
                     <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm font-bold mr-4">GET</span>
                     <code class="text-slate-700 font-mono">/admin/logs</code>
@@ -139,7 +172,7 @@
                 <div class="p-6">
                     <p class="text-gray-600 mb-4">Retrieves the audit trail (Anti-Hallucination logs).</p>
                     <div class="bg-slate-800 rounded-md p-4">
-<pre class="text-blue-400 text-sm font-mono scrollbar-hide overflow-auto">
+                        <pre class="text-blue-400 text-sm font-mono scrollbar-hide overflow-auto">
 // Response
 [
   {
@@ -160,11 +193,41 @@
         </div>
     </section>
 
+    <!-- Test Interfaces Links -->
+    <section id="test-areas" class="py-16 bg-indigo-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-8">Test Interfaces</h2>
+            <p class="mb-12 text-indigo-200">Access the role-based dashboards to verify the system.</p>
+
+            <div class="flex flex-col md:flex-row justify-center gap-6">
+                <a href="./client/index.html"
+                    class="block p-8 bg-indigo-800 rounded-xl hover:bg-indigo-700 transition border border-indigo-700">
+                    <h3 class="text-xl font-bold mb-2">👤 Client Portal</h3>
+                    <p class="text-sm text-indigo-300">Submit requests and view quotes.</p>
+                </a>
+
+                <a href="./enterprise/index.html"
+                    class="block p-8 bg-indigo-800 rounded-xl hover:bg-indigo-700 transition border border-indigo-700">
+                    <h3 class="text-xl font-bold mb-2">🏢 Enterprise Manager</h3>
+                    <p class="text-sm text-indigo-300">Manage catalog and products.</p>
+                </a>
+
+                <a href="./admin/index.html"
+                    class="block p-8 bg-indigo-800 rounded-xl hover:bg-indigo-700 transition border border-indigo-700">
+                    <h3 class="text-xl font-bold mb-2">🛡️ Admin Console</h3>
+                    <p class="text-sm text-indigo-300">Monitor Audit Logs (Anti-Hallucination).</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="bg-slate-900 text-slate-400 py-12 text-center">
         <p class="mb-4">QuoteForge AI Project</p>
-        <p class="text-sm">Licensed under MIT. Original Work by <span class="text-white">NightFury / FogeNetwork</span>.</p>
+        <p class="text-sm">Licensed under MIT. Original Work by <span class="text-white">NightFury / FogeNetwork</span>.
+        </p>
     </footer>
 
 </body>
+
 </html>
