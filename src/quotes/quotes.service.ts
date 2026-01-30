@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { RulesEngine } from '../business-logic/rules/rules.engine';
+import { UnitConversionService } from '../business-logic/units/unit-conversion.service';
 import { GenerateQuoteDto } from './dto/generate-quote.dto';
 import { Quote, Rule } from '@prisma/client';
 
@@ -12,7 +13,8 @@ export class QuotesService {
     constructor(
         private prisma: PrismaService,
         private aiService: AiService,
-        private rulesEngine: RulesEngine
+        private rulesEngine: RulesEngine,
+        private conversionService: UnitConversionService
     ) { }
 
     async generateFromText(dto: GenerateQuoteDto) {
@@ -35,12 +37,13 @@ export class QuotesService {
         let totalAmount = 0;
 
         for (const item of aiResult.items) {
-            // Simple Matcher Strategy (Can be extracted to a service)
+            // Simple Matcher Strategy
             const product = await this.prisma.product.findFirst({
                 where: {
                     companyId: dto.companyId,
                     name: { contains: item.material_hint, mode: 'insensitive' }
-                }
+                },
+                include: { unit: true }
             });
 
             if (!product) {
@@ -48,13 +51,22 @@ export class QuotesService {
                 continue;
             }
 
-            // Base Calculation
             let unitPrice = Number(product.basePrice);
-            let quantity = item.quantity;
+            let quantity = item.quantity; // e.g. 60 (m2)
+
+            // Unit Conversion / Packaging Logic
+            // If product is sold in packs but requested in m2, we need to convert.
+            // For MVP, if product has a `unit` that differs from the detected unit (string), logic needed.
+            // Here we assume mapping is done via simple lookup or the product metadata implies coverage.
+            // MOCK: Checking if product description contains coverage info or using a standard packaging factor.
+            // Ideally, Product model should have 'packagingSize' field. We will simulate it.
+            const packagingSize = 1.0; // Assume 1 unit = 1 unit for now, or fetch from product properties
+
+            const finalQuantity = this.conversionService.calculatePacks(quantity, packagingSize);
 
             // Apply Rules (Deterministic)
             const context = {
-                quantity,
+                quantity: finalQuantity,
                 price: unitPrice,
                 productCategory: product.category,
                 appliedRules: []
@@ -63,20 +75,26 @@ export class QuotesService {
 
             unitPrice = modifiedContext.price;
 
-            const lineTotal = unitPrice * quantity;
+            const lineTotal = unitPrice * finalQuantity;
             totalAmount += lineTotal;
 
             quoteLines.push({
                 productId: product.id,
                 description: item.description || product.name,
-                quantity: quantity,
+                quantity: finalQuantity,
                 unitPrice: unitPrice,
                 totalPrice: lineTotal,
                 metadata: {
                     originalAiItem: item,
-                    appliedRules: modifiedContext.appliedRules
+                    appliedRules: modifiedContext.appliedRules,
+                    originalQuantity: quantity
                 }
             });
+        }
+
+        // Anti-Hallucination: Check for zero price
+        if (totalAmount <= 0) {
+            validationErrors.push("Total amount is zero. Check pricing rules.");
         }
 
         // 4. Create Quote in DB
@@ -105,7 +123,7 @@ export class QuotesService {
                 details: {
                     prompt: dto.requestText,
                     aiConfidence: aiResult.confidence,
-                    rulesAppliedCount: quoteLines.length // Simplified
+                    rulesAppliedCount: quoteLines.length
                 }
             }
         });
