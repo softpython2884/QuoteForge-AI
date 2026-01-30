@@ -8,12 +8,12 @@ export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
     @Get('logs')
-    async getLogs(@Request() req) {
+    async getLogs(@Request() req: any) {
         return this.adminService.getAuditLogs(req.user.userId);
     }
 
     @Get('stats')
-    async getStats(@Request() req) {
+    async getStats(@Request() req: any) {
         return this.adminService.getCompanyStats(req.user.userId);
     }
 }

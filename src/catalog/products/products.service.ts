@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/prisma.service';
+import { PrismaService } from '../../common/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 
 @Injectable()
@@ -7,9 +7,11 @@ export class ProductsService {
     constructor(private prisma: PrismaService) { }
 
     async create(data: CreateProductDto) {
+        const { tags, ...rest } = data;
         return this.prisma.product.create({
             data: {
-                ...data,
+                ...rest,
+                tags: tags ? tags.join(',') : null, // SQLite Compat (Array -> String)
             },
             include: {
                 unit: true,

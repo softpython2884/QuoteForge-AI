@@ -13,9 +13,13 @@ export class RulesEngine {
         const modifiedContext = { ...context };
 
         for (const rule of rules) {
-            if (this.evaluateCondition(rule.conditions, modifiedContext)) {
+            // SQLite Compat: Parse JSON string back to object
+            const conditions = typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions;
+            const actions = typeof rule.actions === 'string' ? JSON.parse(rule.actions) : rule.actions;
+
+            if (this.evaluateCondition(conditions, modifiedContext)) {
                 this.logger.log(`Rule matched: ${rule.name}`);
-                this.executeAction(rule.actions, modifiedContext);
+                this.executeAction(actions, modifiedContext);
             }
         }
 

@@ -33,16 +33,14 @@
     npm install
     ```
 
-3.  **Setup Database**
-    Make sure you have Docker running, then start the PostgreSQL container:
-    ```bash
-    docker-compose up -d
-    ```
+3.  **Setup Database (SQLite)**
+    No Docker required! A local `dev.db` file will be created.
+    Configured in `.env`: `DATABASE_URL="file:./dev.db"`
 
 4.  **Configure Environment**
     Rename `.env.example` to `.env` (passed privately) and set your keys:
     ```env
-    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/quoteforge?schema=public"
+    DATABASE_URL="file:./dev.db"
     GEMINI_API_KEY="your-google-gemini-key"
     JWT_SECRET="your-secret-key"
     ```

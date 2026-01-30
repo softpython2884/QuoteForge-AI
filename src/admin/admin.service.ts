@@ -7,12 +7,18 @@ export class AdminService {
 
     async getAuditLogs(companyId: string) {
         // In a real multi-tenant system, ensure we only return logs for the company
-        return this.prisma.auditLog.findMany({
+        const logs = await this.prisma.auditLog.findMany({
             where: { quote: { companyId } },
             include: { quote: true },
             orderBy: { timestamp: 'desc' },
             take: 100
         });
+
+        // Parse JSON strings back to objects
+        return logs.map(log => ({
+            ...log,
+            details: typeof log.details === 'string' ? JSON.parse(log.details) : log.details
+        }));
     }
 
     async getCompanyStats(companyId: string) {

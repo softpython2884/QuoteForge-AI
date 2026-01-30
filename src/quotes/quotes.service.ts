@@ -41,7 +41,7 @@ export class QuotesService {
             const product = await this.prisma.product.findFirst({
                 where: {
                     companyId: dto.companyId,
-                    name: { contains: item.material_hint, mode: 'insensitive' }
+                    name: { contains: item.material_hint }
                 },
                 include: { unit: true }
             });
@@ -104,12 +104,15 @@ export class QuotesService {
                 customerName: dto.customerName,
                 reference: `Q-${Date.now()}`,
                 inputPrompt: dto.requestText,
-                aiResponse: aiResult,
-                validationErrors: validationErrors.length > 0 ? validationErrors : undefined,
+                aiResponse: JSON.stringify(aiResult), // SQLite String
+                validationErrors: validationErrors.length > 0 ? JSON.stringify(validationErrors) : undefined,
                 isValid: validationErrors.length === 0,
                 totalAmount: totalAmount,
                 lines: {
-                    create: quoteLines
+                    create: quoteLines.map(line => ({
+                        ...line,
+                        metadata: line.metadata ? JSON.stringify(line.metadata) : undefined
+                    }))
                 }
             },
             include: { lines: true }
@@ -120,11 +123,11 @@ export class QuotesService {
             data: {
                 quoteId: quote.id,
                 action: 'QUOTE_GENERATED',
-                details: {
+                details: JSON.stringify({
                     prompt: dto.requestText,
                     aiConfidence: aiResult.confidence,
                     rulesAppliedCount: quoteLines.length
-                }
+                })
             }
         });
 
