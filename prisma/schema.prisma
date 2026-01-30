@@ -152,5 +152,5 @@ model AuditLog {
   action    String   // e.g., "QUOTE_CREATED", "RULE_APPLIED", "AI_PARSING"
   details   String
   
-  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
 }

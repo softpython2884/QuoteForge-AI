@@ -10,7 +10,7 @@ export class AdminService {
         const logs = await this.prisma.auditLog.findMany({
             where: { quote: { companyId } },
             include: { quote: true },
-            orderBy: { timestamp: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 100
         });
 
