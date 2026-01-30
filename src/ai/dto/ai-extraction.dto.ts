@@ -5,6 +5,7 @@ export interface AiExtractedItem {
     material_hint?: string;
     dimensions_hint?: string;
     category_hint?: string;
+    notes?: string;
 }
 
 export interface AiExtractionResult {

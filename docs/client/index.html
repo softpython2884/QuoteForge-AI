@@ -192,8 +192,9 @@
                 tr.className = "border-b last:border-0";
                 tr.innerHTML = `
                     <td class="py-3">
-                        ${line.description}
+                        <div class="font-medium">${line.description}</div>
                         <div class="text-xs text-gray-400">${meta.aiOriginal?.category_hint || ''}</div>
+                        ${meta.aiNote ? `<div class="text-xs text-indigo-400 italic mt-1">💡 ${meta.aiNote}</div>` : ''}
                     </td>
                     <td class="py-3 text-right">${line.quantity} ${unitSymbol}</td>
                     <td class="py-3 text-right">${Number(line.unitPrice).toFixed(2)}</td>

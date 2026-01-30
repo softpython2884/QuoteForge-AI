@@ -88,7 +88,8 @@ export class QuotesService {
                         pricingTrace: pricing.appliedRules, // List of rules applied
                         requestedQty: qty,
                         requestedUnit: unit,
-                        unitSymbol: product.unit?.symbol || 'pc'
+                        unitSymbol: product.unit?.symbol || 'pc',
+                        aiNote: item.notes // New field for AI reasoning
                     }
                 });
 

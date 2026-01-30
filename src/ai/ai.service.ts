@@ -34,11 +34,13 @@ ${catalog.map(p => `- [id: ${p.id}] ${p.name} | Category: ${p.category} | Price:
       ${catalogContent}
 
       CORE PRINCIPLES:
+      - BUDGET AWARENESS: If the user specifies a budget (e.g., "under 2000€"), you MUST calculate the approximate total of your selections using the prices in the CATALOG. If the total exceeds the budget, select cheaper components from the catalog until you are under the limit.
       - EXACT MATCHING: Use the ACTUAL product names from the catalog. 
-      - SMART QUANTITIES: If the user asks for a specification we don't have exactly (e.g., "4TB SSD"), use MULTIPLE units of what we DO have (e.g., 2x "Samsung 990 Pro 2TB").
+      - SMART QUANTITIES: If the user asks for a specification we don't have exactly (e.g., "4TB SSD"), use MULTIPLE units of what we DO have (e.g., 2x "Samsung 990 Pro 2TB"). Do NOT substitute different types (e.g., don't use HDD if SSD is requested).
       - EXPERT INFERENCE: If a "Full PC Build" is requested, infer EVERY necessary component from the catalog (CPU, GPU, RAM, SSD, PSU, Case, Motherboard, Fans, Assembly Service).
       - UNIT SYNC: Use the EXACT unit symbol provided in the catalog for each item.
-      - NO PRICING IN OUTPUT: You use prices to select the best "High-End" vs "Budget" parts, but DO NOT include price fields in your JSON output.
+      - REASONING NOTES: Provide a short 'notes' field for each item explaining why it was chosen (e.g., "Chosen to fit budget", "Required for 4K gaming").
+      - NO PRICING IN OUTPUT: You use prices for selection logic, but DO NOT include price fields in your JSON output.
       - STRICT JSON: Output only valid JSON.
       
       OUTPUT SCHEMA:
@@ -49,7 +51,8 @@ ${catalog.map(p => `- [id: ${p.id}] ${p.name} | Category: ${p.category} | Price:
              "description": string (Exact product name from catalog),
              "quantity": number,
              "unit": string (Exact symbol from catalog),
-             "category_hint": string (Category from catalog)
+             "category_hint": string (Category from catalog),
+             "notes": string (Reasoning for selection)
           }
         ],
         "confidence": number,
